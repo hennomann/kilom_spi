@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import time
 import struct
 import kilom_spi
 
@@ -44,5 +43,8 @@ cmd_str = args[1]
 if op=="w":
     kilom_spi.str_write(device, cmd_str, data_str)
 else:
-    kilom_spi.str_read(device, cmd_str)
-
+    r=kilom_spi.str_read(device, cmd_str)
+    print("0x ",end="")
+    for byte in r[1:]:
+        print("{:02x} ".format(byte),end="")
+    print()
