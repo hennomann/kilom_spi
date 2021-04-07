@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 import struct
-import kilom_spi
+import spi2b4b
 
 # Open SPI device
-device = kilom_spi.open()
+device = spi2b4b.open();
 
-rcmd=0x40
-wcmd=0xC0
-data = 0xbeef
+rcmd=0x04
+wcmd=0x14
+addr = 0
+data = 0xdeadbeef
 
-kilom_spi.write(device,wcmd,data)
+r=spi2b4b.read(device,rcmd,addr)
+print("0x ",end="")
+for byte in r[1:]:
+    print("{:02x} ".format(byte),end="")
+print()
 
-r=kilom_spi.read(device,rcmd)
+spi2b4b.write(device,wcmd,addr,data)
+
+r=spi2b4b.read(device,rcmd,addr)
 print("0x ",end="")
 for byte in r[1:]:
     print("{:02x} ".format(byte),end="")
