@@ -18,6 +18,12 @@ fine_bin = coarse_bin/16.
 
 #r=spi2b4b.read(device,rcmd,rcmd)
 
+def disable_stretcher():
+  spi2b4b.write(device,0x14,0x01,0x10)
+
+def enable_stretcher():
+  spi2b4b.write(device,0x14,0x01,0x00)
+
 def read_scaler(ch):
 
   r= int.from_bytes(
