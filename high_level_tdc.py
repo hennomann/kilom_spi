@@ -67,7 +67,7 @@ def read_tdc_chan(ch):
 
   fine_cnt = r & 0b1111
   coarse_cnt = r>>8
-  return coarse_cnt*coarse_bin + fine_cnt*fine_bin
+  return coarse_cnt*coarse_bin - fine_cnt*fine_bin
 
 def read_fine_cnt(ch):
   r= int.from_bytes(
