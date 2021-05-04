@@ -69,6 +69,17 @@ def read_tdc_chan(ch):
   coarse_cnt = r>>8
   return coarse_cnt*coarse_bin - fine_cnt*fine_bin
 
+def read_pre_tdc_chan(ch):
+
+  r= int.from_bytes(
+          spi2b4b.read(device,0x07, 0xFF&ch ),
+          signed=False, byteorder='big'
+          )
+
+  fine_cnt = r & 0b1111
+  coarse_cnt = r>>8
+  return coarse_cnt*coarse_bin - fine_cnt*fine_bin
+
 def read_fine_cnt(ch):
   r= int.from_bytes(
           spi2b4b.read(device,0x02, (0xFF&ch) ),
@@ -81,6 +92,18 @@ def read_fine_cnt(ch):
 
 def read_tot(ch):
   tot = read_tdc_chan(2*ch+1) - read_tdc_chan(2*ch)
+  return tot
+
+def read_t1(ch):
+  t1 = read_tdc_chan(2*ch)
+  return t1
+
+def read_pre_t1(ch):
+  t1 = read_pre_tdc_chan(2*ch)
+  return t1
+
+def read_pre_tot(ch):
+  tot = read_pre_tdc_chan(2*ch+1) - read_pre_tdc_chan(2*ch)
   return tot
 
 
