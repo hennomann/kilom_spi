@@ -18,6 +18,9 @@ fine_bin = coarse_bin/16.
 
 #r=spi2b4b.read(device,rcmd,rcmd)
 
+def trig_enable_chan(or_map):
+  spi2b4b.write(device,0x18,0x00,or_map)   
+
 def disable_stretcher():
   spi2b4b.write(device,0x14,0x01,0x10)
 
@@ -57,6 +60,9 @@ def disable_calib_pulser():
 
 def arm():
   spi2b4b.write(device,0xa0,0x00,0x00)
+
+def trigger():
+  spi2b4b.write(device,0xb0,0x00,0x00)
 
 def read_tdc_chan(ch):
 
