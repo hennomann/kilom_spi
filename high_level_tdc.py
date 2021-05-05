@@ -14,6 +14,15 @@ device = spi2b4b.open();
 coarse_bin = 1./(150e6)
 fine_bin = coarse_bin/16.
 
+
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(2, GPIO.OUT)
+
+GPIO.output(2,0)
+
+
 ##spi2b4b.write(device,wcmd,wcmd,data)
 
 #r=spi2b4b.read(device,rcmd,rcmd)
