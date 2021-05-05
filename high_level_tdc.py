@@ -4,6 +4,21 @@ import spi2b4b
 import struct
 
 from time import sleep
+import RPi.GPIO as GPIO
+
+
+# this is the GPIO pin to select between flash access
+# and register communication
+# pulling it low means 
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(2, GPIO.OUT)
+
+GPIO.output(2,0)
+
+
+HW_TRIG_GPIO = 16
+GPIO.setup(HW_TRIG_GPIO, GPIO.IN)
+
 
 rcmd=0x04
 wcmd=0x14
@@ -15,12 +30,14 @@ coarse_bin = 1./(150e6)
 fine_bin = coarse_bin/16.
 
 
-import RPi.GPIO as GPIO
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(2, GPIO.OUT)
+def get_trig_state():
+  return GPIO.input(HW_TRIG_GPIO)
 
-GPIO.output(2,0)
+def wait_for_trig():
+  if (get_trig_state() == 0):
+    GPIO.wait_for_edge(HW_TRIG_GPIO, GPIO.RISING)
+
 
 
 ##spi2b4b.write(device,wcmd,wcmd,data)
