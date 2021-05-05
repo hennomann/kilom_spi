@@ -40,14 +40,6 @@ def wait_for_trig(**kwargs):
     GPIO.wait_for_edge(HW_TRIG_GPIO, GPIO.RISING,timeout=timeout)
 
 
-
-
-
-
-##spi2b4b.write(device,wcmd,wcmd,data)
-
-#r=spi2b4b.read(device,rcmd,rcmd)
-
 def trigger_on_chan(ch):
   or_map = get_hw_trig_map()
   or_map |= 1<<ch
@@ -123,9 +115,13 @@ def read_tdc_chan(ch):
           signed=False, byteorder='big'
           )
 
-  fine_cnt = r & 0b1111
+  fine_cnt   = r & 0b1111
+  check_bits = r & 0b11110000
   coarse_cnt = r>>8
-  return coarse_cnt*coarse_bin - fine_cnt*fine_bin
+  if( check_bits == 0 ):
+    return coarse_cnt*coarse_bin - fine_cnt*fine_bin
+  else:
+    return None
 
 def read_pre_tdc_chan(ch):
 
@@ -134,9 +130,14 @@ def read_pre_tdc_chan(ch):
           signed=False, byteorder='big'
           )
 
-  fine_cnt = r & 0b1111
+  fine_cnt   = r & 0b1111
+  check_bits = r & 0b11110000
   coarse_cnt = r>>8
-  return coarse_cnt*coarse_bin - fine_cnt*fine_bin
+  if( check_bits == 0 ):
+    return coarse_cnt*coarse_bin - fine_cnt*fine_bin
+  else:
+    return None
+
 
 def read_fine_cnt(ch):
   r= int.from_bytes(
