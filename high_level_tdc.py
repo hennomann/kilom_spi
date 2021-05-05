@@ -48,11 +48,15 @@ def wait_for_trig(**kwargs):
 
 #r=spi2b4b.read(device,rcmd,rcmd)
 
+def trigger_on_chan(ch):
+  or_map = get_hw_trig_map()
+  or_map |= 1<<ch
+  set_hw_trig_map(or_map)
+
 def get_hw_trig_map():
   return read_register(0x08,0x00)   
 
-
-def disable_hw_trig():
+def clear_hw_trig():
   set_hw_trig_map(0)
 
 def set_hw_trig_map(or_map):
