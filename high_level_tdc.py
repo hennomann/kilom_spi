@@ -41,18 +41,39 @@ def wait_for_trig(**kwargs):
 
 
 
+
+
+
 ##spi2b4b.write(device,wcmd,wcmd,data)
 
 #r=spi2b4b.read(device,rcmd,rcmd)
 
-def trig_enable_chan(or_map):
-  spi2b4b.write(device,0x18,0x00,or_map)   
+def get_hw_trig_map():
+  return read_register(0x08,0x00)   
+
+
+def disable_hw_trig():
+  set_hw_trig_map(0)
+
+def set_hw_trig_map(or_map):
+  write_register(0x18,0x00,or_map)   
 
 def disable_stretcher():
   spi2b4b.write(device,0x14,0x01,0x10)
 
 def enable_stretcher():
   spi2b4b.write(device,0x14,0x01,0x00)
+
+
+def write_register(cmd,addr,data):
+  spi2b4b.write(device,cmd,addr,data)
+
+
+def read_register(cmd,addr):
+  return int.from_bytes(
+          spi2b4b.read(device,cmd, addr ),
+          signed=False, byteorder='big'
+          )
 
 def read_scaler(ch):
 
