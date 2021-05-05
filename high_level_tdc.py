@@ -75,8 +75,33 @@ def acquire(**kwargs):
         if ( ttemp < window_R ):
           t1 = ttemp
 
+
     if (t1 != None):
-      print("ch {:d}, t1 = {:9.2f} ns".format(ch,t1*1e9))
+      # we have a leading edge!
+      # now lets find the trailing edge!
+      t2 = None
+      # only need to read pre-register when t1 is < 0
+      if ( t1 <0 ):
+        pre_t2 = read_pre_tdc_chan(2*ch+1)
+        if (pre_t2 != None):
+          ttemp = pre_t2 - t_ref
+          if (( ttemp > window_L) and (ttemp > t1)):
+            t2 = ttemp
+
+      # haven't found t2 yet, check the post register
+      if (t2 == None):
+        post_t2     = read_tdc_chan(2*ch+1)
+        if (post_t2 != None):
+          ttemp = post_t2 - t_ref
+          if (( ttemp < window_R) and (ttemp > t1)):
+            t2 = ttemp
+      
+      tot = -1e-9
+      if (t2 != None):
+        tot = t2 - t1
+        
+      
+      print("ch {:d}, t1 = {:9.2f} ns, tot = {:9.2f} ns".format(ch,t1*1e9,tot*1e9))
 
 
 
