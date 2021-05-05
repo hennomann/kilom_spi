@@ -34,9 +34,10 @@ fine_bin = coarse_bin/16.
 def get_trig_state():
   return GPIO.input(HW_TRIG_GPIO)
 
-def wait_for_trig():
+def wait_for_trig(**kwargs):
+  timeout = int(1000*float(kwargs.get("timeout",1)))
   if (get_trig_state() == 0):
-    GPIO.wait_for_edge(HW_TRIG_GPIO, GPIO.RISING)
+    GPIO.wait_for_edge(HW_TRIG_GPIO, GPIO.RISING,timeout=timeout)
 
 
 
