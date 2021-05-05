@@ -29,6 +29,57 @@ device = spi2b4b.open();
 coarse_bin = 1./(150e6)
 fine_bin = coarse_bin/16.
 
+def acquire(**kwargs):
+  channels = kwargs.get("channels",range(0,8))
+  trig_chan = kwargs.get("trig_chan",0)
+
+  timeout = kwargs.get("timeout",1)
+
+  # optional - ref_chan is trig_chan if not declared differently
+  ref_chan  = kwargs.get("ref_chan",trig_chan)
+
+  #"trigger" window before trigger
+  window_L = kwargs.get("window_L",-1e-6)
+  #"trigger" window after trigger
+  window_R = kwargs.get("window_R",1e-6)
+
+  clear_hw_trig()
+  trigger_on_chan(trig_chan)
+  arm()
+  wait_for_trig(timeout=timeout)
+
+  t_ref = read_tdc_chan(2*ref_chan)
+  if (t_ref == None):
+    print("got no trigger within timeout")
+    return None
+
+  #print("t_ref")
+  #print(t_ref)
+
+  for ch in channels:
+    t1 = None
+    pre_t1 = read_pre_tdc_chan(2*ch)
+
+    # does pre_t1 fulfill the criteria?
+    # if yes, make it the new t1
+    if (pre_t1 != None) :
+      ttemp = pre_t1 - t_ref
+      if ( ttemp > window_L ):
+        t1 = ttemp
+
+    # t1 hasn't been found yet?, look in the post register
+    if  (t1 == None) :
+      post_t1     = read_tdc_chan(2*ch)
+      if (post_t1 != None) :
+        ttemp = post_t1 - t_ref
+        if ( ttemp < window_R ):
+          t1 = ttemp
+
+    if (t1 != None):
+      print("ch {:d}, t1 = {:9.2f} ns".format(ch,t1*1e9))
+
+
+
 
 
 def get_trig_state():
@@ -150,8 +201,11 @@ def read_fine_cnt(ch):
 
 
 def read_tot(ch):
-  tot = read_tdc_chan(2*ch+1) - read_tdc_chan(2*ch)
-  return tot
+  t2 = read_tdc_chan(2*ch+1)
+  t1 = read_tdc_chan(2*ch)
+  if ((t2 != None) and (t1 != None) ):
+    return t2 -t1
+  return None
 
 def read_t1(ch):
   t1 = read_tdc_chan(2*ch)
@@ -162,8 +216,11 @@ def read_pre_t1(ch):
   return t1
 
 def read_pre_tot(ch):
-  tot = read_pre_tdc_chan(2*ch+1) - read_pre_tdc_chan(2*ch)
-  return tot
+  t2 = read_pre_tdc_chan(2*ch+1)
+  t1 = read_pre_tdc_chan(2*ch)
+  if ((t2 != None) and (t1 != None) ):
+    return t2 -t1
+  return None
 
 
 #print(read_scaler(0))
