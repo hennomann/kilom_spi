@@ -30,6 +30,7 @@ coarse_bin = 1./(150e6)
 fine_bin = coarse_bin/16.
 
 def acquire(**kwargs):
+  n = kwargs.get("n",1)
   channels = kwargs.get("channels",range(0,8))
   trig_chan = kwargs.get("trig_chan",0)
 
@@ -56,52 +57,63 @@ def acquire(**kwargs):
   #print("t_ref")
   #print(t_ref)
 
+  data_mem = {}
+  
   for ch in channels:
-    t1 = None
-    pre_t1 = read_pre_tdc_chan(2*ch)
+    data_mem[ch] = {
+      "t1" = [],
+      "tot" = []
+    }
 
-    # does pre_t1 fulfill the criteria?
-    # if yes, make it the new t1
-    if (pre_t1 != None) :
-      ttemp = pre_t1 - t_ref
-      if ( ttemp > window_L ):
-        t1 = ttemp
 
-    # t1 hasn't been found yet?, look in the post register
-    if  (t1 == None) :
-      post_t1     = read_tdc_chan(2*ch)
-      if (post_t1 != None) :
-        ttemp = post_t1 - t_ref
-        if ( ttemp < window_R ):
+  for i in n:
+
+    for ch in channels:
+      t1 = None
+      pre_t1 = read_pre_tdc_chan(2*ch)
+
+      # does pre_t1 fulfill the criteria?
+      # if yes, make it the new t1
+      if (pre_t1 != None) :
+        ttemp = pre_t1 - t_ref
+        if ( ttemp > window_L ):
           t1 = ttemp
 
+      # t1 hasn't been found yet?, look in the post register
+      if  (t1 == None) :
+        post_t1     = read_tdc_chan(2*ch)
+        if (post_t1 != None) :
+          ttemp = post_t1 - t_ref
+          if ( ttemp < window_R ):
+            t1 = ttemp
 
-    if (t1 != None):
-      # we have a leading edge!
-      # now lets find the trailing edge!
-      t2 = None
-      # only need to read pre-register when t1 is < 0
-      if ( t1 <0 ):
-        pre_t2 = read_pre_tdc_chan(2*ch+1)
-        if (pre_t2 != None):
-          ttemp = pre_t2 - t_ref
-          if (( ttemp > window_L) and (ttemp > t1)):
-            t2 = ttemp
 
-      # haven't found t2 yet, check the post register
-      if (t2 == None):
-        post_t2     = read_tdc_chan(2*ch+1)
-        if (post_t2 != None):
-          ttemp = post_t2 - t_ref
-          if (( ttemp < window_R) and (ttemp > t1)):
-            t2 = ttemp
-      
-      tot = -1e-9
-      if (t2 != None):
-        tot = t2 - t1
+      if (t1 != None):
+        # we have a leading edge!
+        # now lets find the trailing edge!
+        t2 = None
+        # only need to read pre-register when t1 is < 0
+        if ( t1 <0 ):
+          pre_t2 = read_pre_tdc_chan(2*ch+1)
+          if (pre_t2 != None):
+            ttemp = pre_t2 - t_ref
+            if (( ttemp > window_L) and (ttemp > t1)):
+              t2 = ttemp
+
+        # haven't found t2 yet, check the post register
+        if (t2 == None):
+          post_t2     = read_tdc_chan(2*ch+1)
+          if (post_t2 != None):
+            ttemp = post_t2 - t_ref
+            if (( ttemp < window_R) and (ttemp > t1)):
+              t2 = ttemp
         
-      
-      print("ch {:d}, t1 = {:9.2f} ns, tot = {:9.2f} ns".format(ch,t1*1e9,tot*1e9))
+        tot = -1e-9
+        if (t2 != None):
+          tot = t2 - t1
+          
+        
+        #print("ch {:d}, t1 = {:9.2f} ns, tot = {:9.2f} ns".format(ch,t1*1e9,tot*1e9))
 
 
 
@@ -110,10 +122,23 @@ def acquire(**kwargs):
 def get_trig_state():
   return GPIO.input(HW_TRIG_GPIO)
 
+#def wait_for_trig(**kwargs):
+#  timeout = int(1000*float(kwargs.get("timeout",1)))
+#  if (get_trig_state() == 0):
+#    GPIO.wait_for_edge(HW_TRIG_GPIO, GPIO.RISING,timeout=timeout)
+
 def wait_for_trig(**kwargs):
-  timeout = int(1000*float(kwargs.get("timeout",1)))
-  if (get_trig_state() == 0):
-    GPIO.wait_for_edge(HW_TRIG_GPIO, GPIO.RISING,timeout=timeout)
+  timeout = float(kwargs.get("timeout",1))
+  delay = 1e-3
+  acc_delay = 0
+
+  while(get_trig_state() == 0):
+    sleep(delay)
+    acc_delay += delay
+    if(acc_delay > timeout):
+      return 0
+  return 1
+
 
 
 def trigger_on_chan(ch):
