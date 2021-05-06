@@ -326,15 +326,35 @@ def plot_pulses(data,**kwargs):
   example_key = channels[0]
   data_length = len(data[example_key]["t1"])
   n = kwargs.get("n",10)
-  window_L = kwargs.get("window_L",np.nan)
-  window_R = kwargs.get("window_R",np.nan)
+  window_L = kwargs.get("window_L",-1e-6)
+  window_R = kwargs.get("window_R",1e-6)
 
   staggered = kwargs.get("staggered",False)
-    
-  pulse_height = kwargs.get("pulse_height",0.9)
-  xlabel= kwargs.get("xlabel","time (s)")
+   
+  default_pulse_height = 1
+  if(staggered):
+    default_pulse_height = 0.75
+ 
+  pulse_height = kwargs.get("pulse_height",default_pulse_height)
   ylabel= kwargs.get("ylabel","state (a.u.)")
   title = kwargs.get("title" ,"pulse view")
+
+  time_unit = kwargs.get("time_unit","ns")
+
+  xlabel= kwargs.get("xlabel","time ({:s})".format(time_unit))
+
+  tmult = 1e9
+  if(time_unit == "s"):
+    tmult = 1
+  elif (time_unit == "us"):
+    tmult = 1e6
+  elif (time_unit == "ms"):
+    tmult = 1e3
+  elif (time_unit == "ps"):
+    tmult = 1e12
+
+  window_L *= tmult
+  window_R *= tmult
 
   n = np.min([n,data_length])
 
@@ -345,8 +365,8 @@ def plot_pulses(data,**kwargs):
   for i in range(0,n):
     stagger = 0
     for ch in channels:
-      t1 = data[ch]["t1"][i]
-      tot = data[ch]["tot"][i]
+      t1 = data[ch]["t1"][i] * tmult
+      tot = data[ch]["tot"][i] * tmult
     
       if( not(np.isnan(t1)) and not(np.isnan(tot))):
         t2 = t1+tot
