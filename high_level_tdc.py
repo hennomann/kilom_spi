@@ -3,9 +3,15 @@
 import spi2b4b
 import struct
 
+
 from time import sleep
 import RPi.GPIO as GPIO
 
+
+def isNaN(num):
+    return num != num
+
+NaN = float('nan')
 
 # this is the GPIO pin to select between flash access
 # and register communication
@@ -61,15 +67,16 @@ def acquire(**kwargs):
   
   for ch in channels:
     data_mem[ch] = {
-      "t1" = [],
-      "tot" = []
+      "t1"  : [],
+      "tot" : []
     }
 
 
-  for i in n:
+  for i in range(0,n):
 
     for ch in channels:
       t1 = None
+      tot = None
       pre_t1 = read_pre_tdc_chan(2*ch)
 
       # does pre_t1 fulfill the criteria?
@@ -108,14 +115,23 @@ def acquire(**kwargs):
             if (( ttemp < window_R) and (ttemp > t1)):
               t2 = ttemp
         
-        tot = -1e-9
         if (t2 != None):
           tot = t2 - t1
           
-        
+         
         #print("ch {:d}, t1 = {:9.2f} ns, tot = {:9.2f} ns".format(ch,t1*1e9,tot*1e9))
 
+      if(t1 == None):
+        data_mem[ch]["t1"] += [NaN]
+      else:
+        data_mem[ch]["t1"] += [t1]
 
+      if(tot == None):
+        data_mem[ch]["tot"] += [NaN]
+      else:
+        data_mem[ch]["tot"] += [tot]
+
+  return data_mem
 
 
 
