@@ -225,12 +225,6 @@ def read_fine_cnt(ch):
   return fine_cnt
 
 
-def read_tot(ch):
-  t2 = read_tdc_chan(2*ch+1)
-  t1 = read_tdc_chan(2*ch)
-  if ((t2 != None) and (t1 != None) ):
-    return t2 -t1
-  return None
 
 def read_t1(ch):
   t1 = read_tdc_chan(2*ch)
@@ -239,6 +233,21 @@ def read_t1(ch):
 def read_pre_t1(ch):
   t1 = read_pre_tdc_chan(2*ch)
   return t1
+
+def read_t2(ch):
+  t2 = read_tdc_chan(2*ch+1)
+  return t2
+
+def read_pre_t2(ch):
+  t2 = read_pre_tdc_chan(2*ch+1)
+  return t2
+
+def read_tot(ch):
+  t2 = read_tdc_chan(2*ch+1)
+  t1 = read_tdc_chan(2*ch)
+  if ((t2 != None) and (t1 != None) ):
+    return t2 -t1
+  return None
 
 def read_pre_tot(ch):
   t2 = read_pre_tdc_chan(2*ch+1)
