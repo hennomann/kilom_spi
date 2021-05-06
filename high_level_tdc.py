@@ -312,3 +312,54 @@ def read_pre_tot(ch):
 #sleep(0.01)
 #print(read_tot(0))
 
+def plot_pulses(data,**kwargs):
+  # data from acquire()
+  import numpy as np
+  from matplotlib import pyplot as plt
+
+  prop_cycle = plt.rcParams['axes.prop_cycle']
+  colors = prop_cycle.by_key()['color']
+    
+  channels     = list(data.keys())
+  alpha        = kwargs.get("alpha",0.3)
+  channels.sort()
+  example_key = channels[0]
+  data_length = len(data[example_key]["t1"])
+  n = kwargs.get("n",10)
+  window_L = kwargs.get("window_L",np.nan)
+  window_R = kwargs.get("window_R",np.nan)
+
+  staggered = kwargs.get("staggered",False)
+    
+  pulse_height = kwargs.get("pulse_height",0.9)
+  xlabel= kwargs.get("xlabel","time (s)")
+  ylabel= kwargs.get("ylabel","state (a.u.)")
+  title = kwargs.get("title" ,"pulse view")
+
+  n = np.min([n,data_length])
+
+  print("data length: {:d}".format(data_length))
+  print("plotting first n={:d} traces".format(n))
+  
+  
+  for i in range(0,n):
+    stagger = 0
+    for ch in channels:
+      t1 = data[ch]["t1"][i]
+      tot = data[ch]["tot"][i]
+    
+      if( not(np.isnan(t1)) and not(np.isnan(tot))):
+        t2 = t1+tot
+        x = [window_L,t1,t1,t2,t2,window_R]
+        y = np.array([0,        0, 1, 1, 0,    0   ])*pulse_height + stagger
+        if(i == 0):
+          plt.plot(x,y,alpha=alpha,color=colors[ch],label="ch{:d}".format(ch))
+        else:
+          plt.plot(x,y,alpha=alpha,color=colors[ch])
+      if(staggered):
+        stagger += 1
+  plt.legend()
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+  plt.title(title)
+  plt.show()
