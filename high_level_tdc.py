@@ -35,6 +35,41 @@ device = spi2b4b.open();
 coarse_bin = 1./(150e6)
 fine_bin = coarse_bin/16.
 
+
+def start_server():
+  from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
+  server = SimpleJSONRPCServer(('localhost', 8899))
+  server.register_function(acquire)
+  server.register_function(get_trig_state)
+  server.register_function(wait_for_trig)
+  server.register_function(trigger_on_chan)
+  server.register_function(get_hw_trig_map)
+  server.register_function(clear_hw_trig)
+  server.register_function(set_hw_trig_map)
+  server.register_function(disable_stretcher)
+  server.register_function(enable_stretcher)
+  server.register_function(write_register)
+  server.register_function(read_register)
+  server.register_function(read_scaler)
+  server.register_function(scaler_rate)
+  server.register_function(enable_calib_pulser)
+  server.register_function(disable_calib_pulser)
+  server.register_function(arm)
+  server.register_function(trigger)
+  server.register_function(read_tdc_chan)
+  server.register_function(read_pre_tdc_chan)
+  server.register_function(read_fine_cnt)
+  server.register_function(read_t1)
+  server.register_function(read_pre_t1)
+  server.register_function(read_t2)
+  server.register_function(read_pre_t2)
+  server.register_function(read_tot)
+  server.register_function(read_pre_tot)
+  #server.register_function(plot_pulses)
+
+  print("Start server")
+  server.serve_forever()
+
 def acquire(**kwargs):
   n = kwargs.get("n",1)
   channels = kwargs.get("channels",range(0,8))
