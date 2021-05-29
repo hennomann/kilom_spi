@@ -94,7 +94,7 @@ def start_server(**kwargs):
   # execute at client
   #server.register_function(plot_pulses)
 
-  print("starting server at {:s}:{:s}".format(host,port))
+  print("starting server at {:s}:{:d}".format(host,port))
   server.serve_forever()
 
 def acquire(**kwargs):
