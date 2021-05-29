@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 #import spi2b4b
-import spi2b4b
 import struct
 
 
 from time import sleep
-import RPi.GPIO as GPIO
+
+
+
 
 
 def isNaN(num):
@@ -13,32 +14,56 @@ def isNaN(num):
 
 NaN = float('nan')
 
-# this is the GPIO pin to select between flash access
-# and register communication
-# pulling it low means 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(2, GPIO.OUT)
 
-GPIO.output(2,0)
-
-
-HW_TRIG_GPIO = 16
-GPIO.setup(HW_TRIG_GPIO, GPIO.IN)
+try:
+  import RPi.GPIO as GPIO
+  # this is the GPIO pin to select between flash access
+  # and register communication
+  # pulling it low means 
+  GPIO.setmode(GPIO.BCM)
+  GPIO.setup(2, GPIO.OUT)
+  
+  GPIO.output(2,0)
+  
+  
+  HW_TRIG_GPIO = 16
+  GPIO.setup(HW_TRIG_GPIO, GPIO.IN)
+except:
+  print("cannot initialize RasPi GPIO")
+  print("this is okay if you are a client")
 
 
 rcmd=0x04
 wcmd=0x14
 
-# Open SPI device
-device = spi2b4b.open();
+try:
+  import spi2b4b
+  # Open SPI device
+  device = spi2b4b.open();
+except:
+  print("cannot initialize RasPi SPI port")
+  print("this is okay if you are a client")
+  
 
 coarse_bin = 1./(150e6)
 fine_bin = coarse_bin/16.
 
+conn = None
 
-def start_server():
+def connect_server(ip,port):
+  from jsonrpclib import Server
+  global conn
+  conn = Server('http://'+ip+':'+str(port))
+
+
+def start_server(**kwargs):
+  
+  port = int(kwargs.get("port",8899))
+  host = str(kwargs.get("host","0.0.0.0"))
+  
   from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
-  server = SimpleJSONRPCServer(('localhost', 8899))
+  server = SimpleJSONRPCServer((host, port)) # important! better 0.0.0.0 not 127.0.0.1
+  
   server.register_function(acquire)
   server.register_function(get_trig_state)
   server.register_function(wait_for_trig)
@@ -65,12 +90,24 @@ def start_server():
   server.register_function(read_pre_t2)
   server.register_function(read_tot)
   server.register_function(read_pre_tot)
+  
+  # execute at client
   #server.register_function(plot_pulses)
 
-  print("Start server")
+  print("starting server at {:s}:{:s}".format(host,port))
   server.serve_forever()
 
 def acquire(**kwargs):
+  if(conn):
+    # repairing integer keys that were transmitted as strings
+    data = conn.acquire(**kwargs)
+    old_keys = list(data.keys())
+    old_keys.sort()
+    for key in old_keys:
+      new_key = int(key)
+      data[new_key] = data.pop(key)
+    return data
+  
   n = kwargs.get("n",1)
   channels = kwargs.get("channels",range(0,8))
   trig_chan = kwargs.get("trig_chan",0)
@@ -171,6 +208,9 @@ def acquire(**kwargs):
 
 
 def get_trig_state():
+  if(conn):
+    return conn.get_trig_state()
+  
   return GPIO.input(HW_TRIG_GPIO)
 
 #def wait_for_trig(**kwargs):
@@ -179,6 +219,9 @@ def get_trig_state():
 #    GPIO.wait_for_edge(HW_TRIG_GPIO, GPIO.RISING,timeout=timeout)
 
 def wait_for_trig(**kwargs):
+  if(conn):
+    return conn.wait_for_trig(**kwargs)
+  
   timeout = float(kwargs.get("timeout",1))
   delay = 1e-3
   acc_delay = 0
@@ -193,37 +236,55 @@ def wait_for_trig(**kwargs):
 
 
 def trigger_on_chan(ch):
+  if(conn):
+    return conn.trigger_on_chan(ch)
   or_map = get_hw_trig_map()
   or_map |= 1<<ch
   set_hw_trig_map(or_map)
 
 def get_hw_trig_map():
+  if(conn):
+    return conn.get_hw_trig_map()
   return read_register(0x08,0x00)   
 
 def clear_hw_trig():
+  if(conn):
+    return conn.clear_hw_trig()
   set_hw_trig_map(0)
 
 def set_hw_trig_map(or_map):
+  if(conn):
+    return conn.set_hw_trig_map(or_map)
   write_register(0x18,0x00,or_map)   
 
 def disable_stretcher():
+  if(conn):
+    return conn.disable_stretcher()
   spi2b4b.write(device,0x14,0x01,0x10)
 
 def enable_stretcher():
+  if(conn):
+    return conn.enable_stretcher()
   spi2b4b.write(device,0x14,0x01,0x00)
 
 
 def write_register(cmd,addr,data):
+  if(conn):
+    return conn.write_register(cmd,addr,data)
   spi2b4b.write(device,cmd,addr,data)
 
 
 def read_register(cmd,addr):
+  if(conn):
+    return conn.read_register(cmd,addr)
   return int.from_bytes(
           spi2b4b.read(device,cmd, addr ),
           signed=False, byteorder='big'
           )
 
 def read_scaler(ch):
+  if(conn):
+    return conn.read_scaler(ch)
 
   r= int.from_bytes(
           spi2b4b.read(device,0x03, 0xFF&ch ),
@@ -234,6 +295,8 @@ def read_scaler(ch):
   return [ref_cnt, hit_cnt]
 
 def scaler_rate(ch,**kwargs):
+  if(conn):
+    return conn.scaler_rate(ch,**kwargs)
   delay = float(kwargs.get("delay",1))
   ref_cnt_a, cnt_a = read_scaler(ch)
   sleep(delay)
@@ -249,18 +312,28 @@ def scaler_rate(ch,**kwargs):
   return net_cnt/meas_delay
 
 def enable_calib_pulser():
+  if(conn):
+    return conn.enable_calib_pulser()
   spi2b4b.write(device,0x14,0x02,0x01)
 
 def disable_calib_pulser():
+  if(conn):
+    return conn.disable_calib_pulser()
   spi2b4b.write(device,0x14,0x02,0x00)
 
 def arm():
+  if(conn):
+    return conn.arm()
   spi2b4b.write(device,0xa0,0x00,0x00)
 
 def trigger():
+  if(conn):
+    return conn.trigger()
   spi2b4b.write(device,0xb0,0x00,0x00)
 
 def read_tdc_chan(ch):
+  if(conn):
+    return conn.read_tdc_chan(ch)
 
   r= int.from_bytes(
           spi2b4b.read(device,0x02, 0xFF&ch ),
@@ -276,6 +349,8 @@ def read_tdc_chan(ch):
     return None
 
 def read_pre_tdc_chan(ch):
+  if(conn):
+    return conn.read_pre_tdc_chan(ch)
 
   r= int.from_bytes(
           spi2b4b.read(device,0x07, 0xFF&ch ),
@@ -292,6 +367,8 @@ def read_pre_tdc_chan(ch):
 
 
 def read_fine_cnt(ch):
+  if(conn):
+    return conn.read_fine_cnt(ch)
   r= int.from_bytes(
           spi2b4b.read(device,0x02, (0xFF&ch) ),
           signed=False, byteorder='big'
@@ -303,22 +380,32 @@ def read_fine_cnt(ch):
 
 
 def read_t1(ch):
+  if(conn):
+    return conn.read_t1(ch)
   t1 = read_tdc_chan(2*ch)
   return t1
 
 def read_pre_t1(ch):
+  if(conn):
+    return conn.read_pre_t1(ch)
   t1 = read_pre_tdc_chan(2*ch)
   return t1
 
 def read_t2(ch):
+  if(conn):
+    return conn.read_t2(ch)
   t2 = read_tdc_chan(2*ch+1)
   return t2
 
 def read_pre_t2(ch):
+  if(conn):
+    return conn.read_pre_t2(ch)
   t2 = read_pre_tdc_chan(2*ch+1)
   return t2
 
 def read_tot(ch):
+  if(conn):
+    return conn.read_tot(ch)
   t2 = read_tdc_chan(2*ch+1)
   t1 = read_tdc_chan(2*ch)
   if ((t2 != None) and (t1 != None) ):
@@ -326,6 +413,8 @@ def read_tot(ch):
   return None
 
 def read_pre_tot(ch):
+  if(conn):
+    return conn.read_pre_tot(ch)
   t2 = read_pre_tdc_chan(2*ch+1)
   t1 = read_pre_tdc_chan(2*ch)
   if ((t2 != None) and (t1 != None) ):
@@ -333,19 +422,11 @@ def read_pre_tot(ch):
   return None
 
 
-#print(read_scaler(0))
-
-#enable_calib_pulser()
-#disable_calib_pulser()
-
+##################################################
+##         local functions - no server          ##
+##################################################
 
 
-#for i in range(0,16):
-#  print(scaler_rate(i,delay=0.2))
-
-#arm()
-#sleep(0.01)
-#print(read_tot(0))
 
 def plot_pulses(data,**kwargs):
   # data from acquire()
